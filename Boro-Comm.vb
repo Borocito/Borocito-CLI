@@ -13,86 +13,38 @@ Namespace Boro_Comm
     '   Another (Custom, developer by You or others...)
 
     Module Connector
-
-        Private listener As TcpListener
-        Private client As TcpClient
-        Private stream As NetworkStream
-        Private reader As System.IO.StreamReader
-        Private writer As System.IO.StreamWriter
-        Private listenClientsThread As Thread
-        Private listenMessagesThread As Thread
+        Dim ServidorTCP As TCPServer
 
         ' Evento de botón para iniciar el servidor
         Sub StartServer()
             Try
-                ' Configura el servidor TCP para escuchar en el puerto indicado
-                listener = New TcpListener(IPAddress.Any, 13120)
-                listener.Start()
-                Console.WriteLine("Servidor iniciado...")
-
-                ' Crea un hilo que se encargue de aceptar conexiones
-                listenClientsThread = New Thread(AddressOf ListenForClients)
-                listenClientsThread.IsBackground = True
-                listenClientsThread.Start()
+                ServidorTCP = New TCPServer
+                ServidorTCP.StartServer()
+                AddHandler ServidorTCP.MessageReceived, AddressOf MensajeRecibido
             Catch ex As Exception
                 AddToLog("StartServer@Boro_Comm::Connector", "Error: " & ex.Message, True)
             End Try
         End Sub
         Sub StopServer()
             Try
-                ' Cierra los recursos del servidor y del cliente
-                If client IsNot Nothing Then client.Close()
-                If listener IsNot Nothing Then listener.Stop()
+                ServidorTCP.StopServer()
             Catch ex As Exception
                 AddToLog("StopServer@Boro_Comm::Connector", "Error: " & ex.Message, True)
             End Try
         End Sub
-
-        ' Método que espera y acepta una conexión entrante
-        Private Sub ListenForClients()
-            While True
-                Try
-                    ' Espera una conexión del cliente
-                    client = listener.AcceptTcpClient()
-                    Console.WriteLine("Cliente conectado.")
-
-                    ' Crea un stream para la comunicación
-                    stream = client.GetStream()
-                    reader = New System.IO.StreamReader(stream)
-                    writer = New System.IO.StreamWriter(stream)
-                    writer.AutoFlush = True
-
-                    ' Comienza a escuchar los mensajes del cliente
-                    listenMessagesThread = New Thread(AddressOf ListenForMessages)
-                    listenMessagesThread.IsBackground = True
-                    listenMessagesThread.Start()
-                    'ListenForMessages()
-                Catch ex As Exception
-                    AddToLog("ListenForClients@Boro_Comm::Connector", "Error: " & ex.Message, True)
-                End Try
-            End While
-        End Sub
-        ' Método para escuchar los mensajes enviados por el cliente
-        Private Sub ListenForMessages()
-            While True
-                Try
-                    ' Lee el mensaje del cliente
-                    Dim message As String = reader.ReadToEnd()
-                    If message IsNot Nothing Then
-                        Console.WriteLine("Mensaje recibido: " & message)
-                    End If
-                Catch ex As Exception
-                    AddToLog("ListenForMessages@Boro_Comm::Connector", "Error: " & ex.Message, True)
-                    Exit While
-                End Try
-            End While
-        End Sub
+        Function MensajeRecibido(sender As Object, e As String) As String
+            Try
+                Return SendMesssage(Network.CommandManager.CommandManager(e))
+            Catch ex As Exception
+                Return AddToLog("MensajeRecibido@Boro_Comm::Connector", "Error: " & ex.Message, True)
+            End Try
+        End Function
 
         ' Método para enviar un mensaje al cliente
         Function SendMesssage(message As String) As String
             Try
-                If client IsNot Nothing AndAlso writer IsNot Nothing Then
-                    writer.WriteLine(message)
+                If ServidorTCP IsNot Nothing AndAlso message IsNot Nothing Then
+                    ServidorTCP.SendMessageToClient(message)
                     Console.WriteLine("Mensaje enviado: " & message)
                 End If
                 Return message
@@ -100,6 +52,78 @@ Namespace Boro_Comm
                 Return AddToLog("SendMesssage@Boro_Comm::Connector", "Error: " & ex.Message, True)
             End Try
         End Function
+
+        Public Class TCPServer
+            Private server As TcpListener
+            Private client As TcpClient
+            Private clientStream As NetworkStream
+            Private thread As Thread
+            Private isListening As Boolean
+
+            Public Event MessageReceived As EventHandler(Of String)
+
+            Public Sub New()
+                server = New TcpListener(IPAddress.Any, 13120)
+                isListening = False
+            End Sub
+
+            ' Método para iniciar el servidor
+            Public Sub StartServer()
+                server.Start()
+                isListening = True
+                thread = New Thread(AddressOf ListenForClients)
+                thread.Start()
+            End Sub
+
+            ' Método para detener el servidor
+            Public Sub StopServer()
+                isListening = False
+                server.Stop()
+            End Sub
+
+            ' Método para escuchar clientes y aceptar la conexión
+            Private Sub ListenForClients()
+                While isListening
+                    If server.Pending() Then
+                        client = server.AcceptTcpClient()
+                        clientStream = client.GetStream()
+                        Console.WriteLine("Cliente conectado.")
+                        ' Iniciar hilo para recibir mensajes
+                        Dim readThread As New Thread(AddressOf ReadMessages)
+                        readThread.Start()
+                    End If
+                    Thread.Sleep(100)
+                End While
+            End Sub
+
+            ' Método para leer los mensajes del cliente
+            Private Sub ReadMessages()
+                Dim buffer(1024) As Byte
+                While isListening
+                    Try
+                        If clientStream.DataAvailable Then
+                            Dim bytesRead As Integer = clientStream.Read(buffer, 0, buffer.Length)
+                            If bytesRead > 0 Then
+                                Dim message As String = Encoding.UTF8.GetString(buffer, 0, bytesRead)
+                                RaiseEvent MessageReceived(Me, message)
+                            End If
+                        End If
+                        Thread.Sleep(100)
+                    Catch ex As Exception
+                        Console.WriteLine("Error leyendo mensaje: " & ex.Message)
+                    End Try
+                End While
+            End Sub
+
+            ' Método para enviar un mensaje al cliente
+            Public Sub SendMessageToClient(message As String)
+                If clientStream IsNot Nothing Then
+                    Dim data As Byte() = Encoding.UTF8.GetBytes(message)
+                    clientStream.Write(data, 0, data.Length)
+                    Console.WriteLine("Mensaje enviado: " & message)
+                End If
+            End Sub
+        End Class
 
     End Module
 
