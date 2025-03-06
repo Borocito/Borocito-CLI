@@ -239,8 +239,6 @@ Namespace Network
         Sub CommandListenerManager(ByVal active As Boolean)
             Try
                 If active Then
-                    'Activo
-                    Boro_Comm.StartServer() 'LLAMA A BORO-COMM A INICIAR LA ESCUCHA TCP/ip
                     If IsCommandReaderThreadRunning Then
                         'ThreadReadCMDServer.Resume()
                     Else
