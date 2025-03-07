@@ -249,7 +249,6 @@ Module StartUp
                 Shortcut.WindowStyle = 1
                 Shortcut.Description = "Updater software for Borocito"
                 Shortcut.Save()
-                My.Computer.FileSystem.CopyFile(DIRCommons & "\BorocitoUpdater.exe", Environment.GetFolderPath(Environment.SpecialFolder.Startup) & "\Updater.exe")
             End If
         Catch ex As Exception
             AddToLog("StartWithWindows@Extractor", "Error: " & ex.Message, True)
