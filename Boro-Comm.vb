@@ -3,14 +3,6 @@ Imports System.Net.Sockets
 Imports System.Text
 Imports System.Threading
 Namespace Boro_Comm
-    'BORO-COMM es el nuevo sistema de comunicacion Servidor-Cliente-Servidor
-    'Utiliza el (proximo) complemento Boro-Comm para realizar la tarea de comunicar con algun proveedor de comandos
-    'Como:
-    '   Firebase by Google
-    '       Realtime Database
-    '   TCP/IP (for Local network or Wordwide)
-    '   IDFTP (Actual system)
-    '   Another (Custom, developer by You or others...)
 
     Module Connector
         Dim ServidorTCP As TCPServer
@@ -34,6 +26,9 @@ Namespace Boro_Comm
         End Sub
         Function MensajeRecibido(sender As Object, e As String) As String
             Try
+                If e.Trim().StartsWith("¡#") Then 'es un mensaje para broadcast only
+                    Return SendMesssage(e.Replace("¡#", ""))
+                End If
                 Return SendMesssage(Network.CommandManager.CommandManager(e))
             Catch ex As Exception
                 Return AddToLog("MensajeRecibido@Boro_Comm::Connector", "Error: " & ex.Message, True)
